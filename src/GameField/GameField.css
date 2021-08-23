@@ -2,11 +2,23 @@
     --width: 30px;
     width: var(--width);
     height: var(--width);
+    color: #FFF;
+}
+
+.game-field-cell_empty {
     background: #333;
 }
 
-.game-field-cell_filled {
-    background: #444;
+.game-field-cell_ok {
+    background: #333;
+}
+
+.game-field-cell_offered {
+    background: #319065;
+}
+
+.game-field-cell_placed {
+    background: #614;
 }
 
 .game-field {

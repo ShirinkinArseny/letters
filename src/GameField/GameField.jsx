@@ -1,15 +1,20 @@
 import React from "react";
 import './GameField.css';
 
-const GameFieldEmptyCell = () => {
-    return <div className="game-field-cell game-field-cell_empty">
+const GameFieldEmptyCell = (props) => {
+    return <button className="game-field-cell game-field-cell_empty" onClick={() => props.placeItem()}>
 
-    </div>
+    </button>
 };
 
 const GameFieldFilledCell = (props) => {
-    console.log(props);
-    return <div className="game-field-cell game-field-cell_filled">
+    const classname =
+        props.state === "ok"
+            ? "game-field-cell_ok"
+            : props.state === "placed"
+                ? "game-field-cell_placed"
+                : "game-field-cell_offered";
+    return <div className={classname + " game-field-cell"}>
         <div className="game-field-cell__author">
             {props.author}
         </div>
@@ -29,11 +34,16 @@ const GameField = (props) => {
     const lettersComponents = props.letters.map((letter, index) => {
         return letter
             ? <GameFieldFilledCell key={index} {...letter}/>
-            : <GameFieldEmptyCell key={index}/>;
+            : <GameFieldEmptyCell key={index} placeItem={() => {
+                if (props.placeItem) {
+                    props.placeItem(index);
+                }
+            }
+            }/>;
     });
 
     return <div className="game-field"
-                style={{ "--game-field-size": size }}
+                style={{"--game-field-size": size}}
     >
         {lettersComponents}
     </div>

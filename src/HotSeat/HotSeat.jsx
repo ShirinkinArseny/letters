@@ -11,15 +11,14 @@ const HotSeat = () => {
         "hi"
     ];
     const server = createServer(players, "philosophy", 14);
-    const games = players.map((player) =>
-        <div className="hot-seat__window" key={player}>
+    const games = players.map((player) => {
+        return <div className="hot-seat__window" key={player}>
             <Game
                 player={player}
-                inventory={server.getPlayersInventory(player)}
-                field = {server.getGameField()}
+                server={server}
             />
         </div>
-    );
+    });
     return <div className="hot-seat">
         {games}
         {<Pool queue={server.getQueue()}/>}

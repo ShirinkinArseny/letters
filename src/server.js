@@ -111,7 +111,9 @@ function createGameField(size, initialItems) {
     const y = Math.round(size / 2);
     initialItems.forEach((item, idx) => {
         const x = offset + idx;
-        gamefield[xyToIdx(x, y, size)] = item;
+        const i = xyToIdx(x, y, size);
+        item.state = "ok";
+        gamefield[i] = item;
     });
     return gamefield;
 }
@@ -124,6 +126,7 @@ function createServer(players, initialWord, size) {
     const field = createGameField(size, data.fields);
 
     const queue = shuffle(data.queue);
+    const invokeOnChange = [];
 
     function peekLetter() {
         return queue.shift();
@@ -135,29 +138,135 @@ function createServer(players, initialWord, size) {
         const v = [];
         inventories[p] = v;
         for (let i = 0; i < initialInventorySize; i++) {
-            v.push(peekLetter());
+            const item = peekLetter();
+            item.author = p;
+            v.push(item);
         }
         return v;
     });
 
 
+    function delay(action) {
+        setTimeout(() => {
+            action();
+        }, randomInRange(50, 500));
+    }
+
     function delayed(value) {
         return new Promise((resolve) => {
-            setTimeout(() => {
+            delay(() => {
                 resolve(value);
-            }, randomInRange(50, 500));
+            });
         });
+    }
+
+    function toggleChange() {
+        invokeOnChange.forEach(c => c());
+    }
+
+    function offerItem(
+        player,
+        symbol,
+        index
+    ) {
+        if (index < 0 || index > size * size) {
+            throw new Error("Cell " + index + " is out of field");
+        }
+        const playerInventoryIndex = inventories[player].findIndex(e => e.symbol === symbol);
+        if (playerInventoryIndex === -1) {
+            throw new Error("Player " + player + " has no letter " + symbol + " in inventory")
+        }
+        const item = inventories[player].splice(playerInventoryIndex, 1)[0];
+        if (field[index]) {
+            throw new Error("Cell " + index + " is already taken")
+        }
+        item.state = "placed";
+        field[index] = item;
+        toggleChange();
+    }
+
+    let accepts = {};
+    let acceptsRemaining = 0;
+
+    function offerWord(player) {
+        for (let i = 0; i < size * size; i++) {
+            if (field[i]?.state === "placed") {
+                if (field[i].author !== player) {
+                    throw new Error("Word is offered not by player " + player);
+                }
+                field[i].state = "offered";
+            }
+        }
+        accepts = {};
+        acceptsRemaining = players.length;
+        toggleChange();
+    }
+
+    function acceptVoted() {
+        for (let i = 0; i < size * size; i++) {
+            if (field[i]?.state === "offered") {
+                field[i].state = "ok";
+                const newItem = peekLetter();
+                newItem.author = field[i].author;
+                inventories[field[i].author].push(newItem);
+            }
+        }
+        toggleChange();
+    }
+
+    function refuseVoted() {
+        for (let i = 0; i < size * size; i++) {
+            if (field[i]?.state === "offered") {
+                const refund = field[i];
+                field[i] = undefined;
+                inventories[refund.author].push(refund);
+            }
+        }
+        toggleChange();
+    }
+
+    function accept(player) {
+        if (!accepts[player]) {
+            acceptsRemaining--;
+        }
+        accepts[player] = 1;
+        if (acceptsRemaining === 0) {
+            acceptVoted();
+        }
+    }
+
+    function refuse(player) {
+        refuseVoted();
     }
 
     return {
         getQueue: () => {
             return delayed(queue);
         },
-        getPlayersInventory: (player) => {
-            return delayed(inventories[player]);
+        getPlayerState: (player) => {
+            return delayed({
+                "inventory": inventories[player],
+                "field": field
+            });
         },
-        getGameField: () => {
-            return delayed(field);
+        offerItem: (player, symbol, index) => {
+            delay(() => {
+                offerItem(player, symbol, index);
+            });
+        },
+        offerWord: (player) => {
+            delay(() => {
+                offerWord(player);
+            });
+        },
+        subscribe: (callback) => {
+            invokeOnChange.push(callback);
+        },
+        refuse: (player) => {
+            refuse(player);
+        },
+        accept: (player) => {
+            accept(player);
         }
     }
 
