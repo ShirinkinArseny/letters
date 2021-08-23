@@ -1,0 +1,18 @@
+.game-field-cell {
+    --width: 30px;
+    width: var(--width);
+    height: var(--width);
+    background: #333;
+}
+
+.game-field-cell_filled {
+    background: #444;
+}
+
+.game-field {
+    display: grid;
+    gap: 4px;
+    grid-template-columns: repeat(var(--game-field-size), max-content);
+    grid-template-rows: repeat(var(--game-field-size), max-content);
+}
+
