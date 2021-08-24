@@ -13,11 +13,11 @@ const useStyles = makeStyles({
         display: "flex",
         padding: "20px",
         boxSizing: "border-box",
-        justifyContent: "space-between"
+        gap: "20px"
     },
 
     field: {
-
+        flex: "1"
     },
 
     ui: {

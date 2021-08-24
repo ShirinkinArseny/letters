@@ -3,8 +3,13 @@ import {makeStyles} from "@material-ui/core/styles";
 
 const useStyles = makeStyles({
     cell: {
-        width: "40px",
-        height: "40px",
+        width: "100%",
+        "&::after": {
+            content: '" "',
+            display: "block",
+            paddingBottom: "100%"
+        },
+        overflow: "hidden",
         boxSizing: "border-box",
         color: "#FFF",
         border: "none",
@@ -12,9 +17,6 @@ const useStyles = makeStyles({
         textAlign: "center",
         padding: "5px",
         borderRadius: "2px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
         position: "relative",
         boxShadow: "2px 2px 0px inset rgb(255 255 255 / 50%), -2px -2px 0px inset rgb(0 0 0 / 50%)"
     },
@@ -39,7 +41,15 @@ const useStyles = makeStyles({
 
     symbol: {
         fontSize: "25px",
-        fontWeight: 600
+        fontWeight: 600,
+        position: "absolute",
+        left: "0",
+        top: "0",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
     },
 
     price: {

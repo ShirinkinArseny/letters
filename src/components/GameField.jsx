@@ -6,9 +6,10 @@ import {Card, CardContent} from "@material-ui/core";
 const useStyles = makeStyles({
 
     field: {
+        width: "100%",
         display: "grid",
         gap: "4px",
-        gridTemplateColumns: "repeat(var(--game-field-size), max-content)",
+        gridTemplateColumns: "repeat(var(--game-field-size), 1fr)",
         gridTemplateRows: "repeat(var(--game-field-size), max-content)",
     },
 
