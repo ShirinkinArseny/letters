@@ -5,14 +5,15 @@ const useStyles = makeStyles({
     title: {
         fontWeight: "600",
         color: "#222",
+        fontSize: "20px"
     }
 })
 
 const GameTitle = (props) => {
     const classes = useStyles();
-    return <div className={classes.title}>
+    return <h1 className={classes.title}>
         {props.title}
-    </div>
+    </h1>
 };
 
 export default GameTitle;

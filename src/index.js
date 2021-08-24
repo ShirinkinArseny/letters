@@ -1,10 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import HotSeat from './HotSeat/HotSeat';
+import SpitScreen from './components/SpitScreen';
 
 ReactDOM.render(
   <React.StrictMode>
-              <HotSeat/>
+              <SpitScreen/>
   </React.StrictMode>,
   document.getElementById('root')
 );

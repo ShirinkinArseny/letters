@@ -1,6 +1,7 @@
 import React from "react";
 import {makeStyles} from "@material-ui/core/styles";
-import {FilledCell, EmptyCell} from "../Cell/Cell";
+import {FilledCell, EmptyCell} from "./Cell";
+import {Card, CardContent} from "@material-ui/core";
 
 const useStyles = makeStyles({
 
@@ -41,11 +42,17 @@ const GameField = (props) => {
             ;
     });
 
-    return <div className={classes.field}
-                style={{"--game-field-size": size}}
-    >
-        {lettersComponents}
-    </div>
+    return <Card >
+        <CardContent>
+            <div className={classes.field}
+                 style={{"--game-field-size": size}}
+            >
+                {lettersComponents}
+            </div>
+        </CardContent>
+    </Card>
+
+
 
 };
 

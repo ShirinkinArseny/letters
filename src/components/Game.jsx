@@ -1,19 +1,22 @@
 import React, {useEffect, useState} from "react";
-import GameUI from "../GameUI/GameUI.jsx";
-import GameTitle from "../GameTitle/GameTitle.jsx";
-import GameField from "../GameField/GameField.jsx";
+import GameUI from "./GameUI.jsx";
+import GameTitle from "./GameTitle.jsx";
+import GameField from "./GameField.jsx";
 import {makeStyles} from "@material-ui/core/styles";
 
 const useStyles = makeStyles({
     game: {
-        background: "#ffffff",
+        background: "#EEE",
         border: "1px solid rgba(255, 255, 255, 0.1)",
         borderRadius: "2px",
         width: "100%",
         height: "100%",
         display: "grid",
-        gridTemplateAreas: '"title title" "field ui"',
-        gridTemplateColumns: "1fr auto",
+        gridTemplateAreas: '"title title ui" "field x ui"',
+        gridTemplateColumns: "auto 1fr auto",
+        gridTemplateRows: "auto 1fr",
+        padding: "20px",
+        boxSizing: "border-box"
     },
 
     title: {
@@ -86,6 +89,7 @@ const Game = (props) => {
                 }}
                 skip={() => props.server.skip(props.player)}
                 renew={() => props.server.renew(props.player)}
+                rank={playerState.rank}
             />
         </div>
     </div>

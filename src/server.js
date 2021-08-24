@@ -124,8 +124,10 @@ function createServer(
     }
 
     const inventories = {};
+    const rank = {};
     const initialInventorySize = 7;
     players.forEach(p => {
+        rank[p] = 0;
         const v = [];
         inventories[p] = v;
         pickNewInventoryItems(p);
@@ -199,7 +201,81 @@ function createServer(
         toggleChange();
     }
 
+
+    function findWords() {
+        function wordsThatContainThisLetterDXDY(x, y, dx, dy) {
+
+            function over(x, y) {
+                return x < 0 || x >= size || y < 0 || y >= size;
+            }
+
+            function pass(x, y, dx, dy) {
+                let [xs, ys] = [x, y];
+                const word = [];
+                while (true) {
+                    xs += dx;
+                    ys += dy;
+                    if (over(xs, ys)) {
+                        break;
+                    }
+                    if (!field[xs + ys * size]) break
+                    word.push([xs, ys])
+                }
+                return word;
+            }
+
+            const start = pass(x, y, dx, dy);
+            const end = pass(x, y, -dx, -dy);
+            const word = start.reverse().concat([[x, y]]).concat(end)
+            if (word.length > 1) return [word.map(c => c[0] + c[1] * size)];
+            return [];
+        }
+
+        function wordsThatContainThisLetterH(x, y) {
+            return wordsThatContainThisLetterDXDY(x, y, -1, 0);
+        }
+
+        function wordsThatContainThisLetterV(x, y) {
+            return wordsThatContainThisLetterDXDY(x, y, 0, -1);
+        }
+
+        function wordsThatContainThisLetter(idx) {
+            const x = idx % size;
+            const y = Math.floor(idx / size);
+            return wordsThatContainThisLetterH(x, y)
+                .concat(wordsThatContainThisLetterV(x, y));
+        }
+
+        function arraysAreIdentical(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+
+
+        const uniqueWords = [];
+
+        field
+            .map((i, idx) => i?.state === "offered" ? idx : undefined)
+            .filter(i => i !== undefined)
+            .map(i => wordsThatContainThisLetter(i))
+            .reduce((a, b) => a.concat(b), [])
+            .forEach(word => {
+                for (let i = 0; i < uniqueWords.length; i++) {
+                    if (arraysAreIdentical(word, uniqueWords[i])) return;
+                }
+                uniqueWords.push(word);
+            });
+
+        uniqueWords.forEach(w => {
+            rank[getCurrentTurnPlayer()] += w.map(idx => field[idx].price).reduce((a, b) => a + b, 0);
+        });
+    }
+
     function acceptVoted() {
+        findWords();
         for (let i = 0; i < size * size; i++) {
             if (field[i]?.state === "offered") {
                 field[i].state = "ok";
@@ -223,6 +299,7 @@ function createServer(
         }
         toggleChange();
     }
+
 
     function accept(player) {
         if (player === getCurrentTurnPlayer()) {
@@ -258,7 +335,7 @@ function createServer(
         for (let i = 0; i < inventories[player].length; i++) {
             queue.push(inventories[player][i]);
         }
-        inventories[player]=[];
+        inventories[player] = [];
         pickNewInventoryItems(player);
         turn++;
         toggleChange();
@@ -266,17 +343,21 @@ function createServer(
 
     return {
         getQueue: () => {
-            return delayed(() => { return queue; });
+            return delayed(() => {
+                return queue;
+            });
         },
         getPlayerState: (player) => {
             return delayed(() => {
                 return {
                     "inventory": inventories[player],
                     "field": field,
+                    "poolRemaining": queue.length,
                     "turn": {
                         "player": getCurrentTurnPlayer(),
                         "number": turn
-                    }
+                    },
+                    "rank": rank
                 }
             });
         },
