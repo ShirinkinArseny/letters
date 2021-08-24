@@ -81,6 +81,9 @@ const GameUI = (props) => {
     return <Card>
         <CardContent>
             <div className={classes.title}>
+                Player: {props.player}
+            </div>
+            <div className={classes.title}>
                 Turn: {props.turn}
             </div>
             <Divider/>
