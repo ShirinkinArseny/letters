@@ -190,7 +190,7 @@ const GameUI = (props) => {
                 <TableHead>
                     <TableRow>
                         <TableCell>Player</TableCell>
-                        <TableCell align="right">Points</TableCell>
+                        <TableCell align="right">Score</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
