@@ -67,6 +67,7 @@ const Game = (props) => {
             <GameField
                 letters={playerState.field}
                 placeItem={placingItem ? (index) => {
+                    setPlacingItem(undefined);
                     props.server.offerItem(props.player, placingItem.symbol, index);
                 } : undefined
                 }
@@ -78,6 +79,8 @@ const Game = (props) => {
                 inventory={playerState.inventory}
                 player={props.player}
                 turn={playerState.turn.player}
+                totalItems={playerState.totalItems}
+                remainingItems={playerState.remainingItems}
                 placingItem={placingItem}
                 setPlacingItem={setPlacingItem}
                 itemsAreOffered={itemsAreOffered}

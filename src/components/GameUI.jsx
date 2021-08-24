@@ -1,8 +1,9 @@
-import React from "react";
+import React, {useState} from "react";
 import {
+    Button,
     Card,
-    CardContent,
-    Divider,
+    CardContent, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+    Divider, LinearProgress,
     List,
     ListItem,
     ListItemIcon,
@@ -14,6 +15,12 @@ import {makeStyles} from "@material-ui/core/styles";
 const useStyles = makeStyles({
     activeCard: {
         color: "#F00"
+    },
+    remaining: {
+        paddingTop: "20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "10px"
     }
 })
 
@@ -21,29 +28,44 @@ const GameUI = (props) => {
 
     const classes = useStyles();
 
+    const [areYouSure, setAreYouSure] = useState(undefined);
+
+    const InventoryItem = (item) => {
+        const eq = props.placingItem?.symbol === item.symbol
+        return <ListItem button
+                         disabled={props.turn !== props.player}
+                         onClick={() => {
+                             if (eq) {
+                                 props.setPlacingItem(undefined);
+                             } else {
+                                 props.setPlacingItem(item);
+                             }
+                         }}
+        >
+            <ListItemText className={eq ? classes.activeCard : ""}
+                          primary={item.symbol + " (" + item.price + ")"}/>
+        </ListItem>
+    }
+
+    const skipTurn = () => {
+        props.setPlacingItem(undefined);
+        props.skip();
+    }
+
+    const renewInventory = () => {
+        props.setPlacingItem(undefined);
+        props.renew();
+    }
+
     return <Card>
         <CardContent>
             <List>
                 {props.inventory
                     .sort((a, b) => a.symbol.localeCompare(b.symbol))
-                    .map((item, idx) => {
-                        const eq = props.placingItem?.symbol === item.symbol
-                        return <ListItem button
-                                         disabled={props.turn !== props.player}
-                                         key={"game-ui__inventory$" + idx + ":" + item.symbol}
-                                         onClick={() => {
-                                             console.log(props.placingItem?.symbol + " $ " + item.symbol + " $ " + eq);
-                                             if (eq) {
-                                                 props.setPlacingItem(undefined);
-                                             } else {
-                                                 props.setPlacingItem(item);
-                                             }
-                                         }}
-                        >
-                            <ListItemText className={eq ? classes.activeCard : ""}
-                                          primary={item.symbol + " (" + item.price + ")"}/>
-                        </ListItem>
-                    })}
+                    .map((item, idx) => <InventoryItem
+                        key={"game-ui__inventory$" + idx + ":" + item.symbol}
+                        {...item}
+                    />)}
             </List>
             <Divider/>
             <List>
@@ -88,10 +110,12 @@ const GameUI = (props) => {
                 </ListItem>
                 <ListItem button
                           disabled={props.turn !== props.player}
-                          onClick={() => {
-                              props.setPlacingItem(undefined);
-                              props.skip();
-                          }}
+                          onClick={() =>
+                              setAreYouSure({
+                                  message: "Are you really wanna skip turn?",
+                                  action: skipTurn
+                              })
+                          }
                 >
                     <ListItemIcon>
                         <SkipNext/>
@@ -100,16 +124,41 @@ const GameUI = (props) => {
                 </ListItem>
                 <ListItem button
                           disabled={props.turn !== props.player}
-                          onClick={() => {
-                              props.setPlacingItem(undefined);
-                              props.renew();
-                          }}
+                          onClick={() =>
+                              setAreYouSure({
+                                  message: "Are you really wanna renew inventory?",
+                                  action: renewInventory
+                              })
+                          }
                 >
                     <ListItemIcon>
                         <Autorenew/>
                     </ListItemIcon>
                     <ListItemText primary="RENEW INVENTORY"/>
                 </ListItem>
+                <Dialog
+                    open={areYouSure}
+                    onClose={() => setAreYouSure(undefined)}
+                >
+                    <DialogTitle>{areYouSure?.message}</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>Doing this may result you losing the game
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => {
+                            setAreYouSure(undefined);
+                        }}>
+                            No, I just missclicked
+                        </Button>
+                        <Button onClick={() => {
+                            areYouSure.action();
+                            setAreYouSure(undefined);
+                        }} color="secondary">
+                            Yes, I understand consequences
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </List>
             <Divider/>
             <Table>
@@ -123,13 +172,17 @@ const GameUI = (props) => {
                     {Object.keys(props.rank)
                         .sort((a, b) => props.rank[b] - props.rank[a])
                         .map(player =>
-                        <TableRow key={player}>
-                            <TableCell>{player}</TableCell>
-                            <TableCell align="right">{props.rank[player]}</TableCell>
-                        </TableRow>
-                    )}
+                            <TableRow key={player}>
+                                <TableCell>{player}</TableCell>
+                                <TableCell align="right">{props.rank[player]}</TableCell>
+                            </TableRow>
+                        )}
                 </TableBody>
             </Table>
+            <div className={classes.remaining}>
+                Remaining letters: {props.remainingItems}
+                <LinearProgress variant="determinate" value={props.remainingItems * 100 / props.totalItems}/>
+            </div>
         </CardContent>
     </Card>
 

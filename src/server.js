@@ -45,10 +45,12 @@ function createLettersData(
     initialWord
 ) {
     const alphabetCopy = [...alphabet.map(e => [...e])];
+    let itemsTotal = alphabetCopy.map(e => e[1]).reduce((a, b) => a + b, 0);
     const initialWordFields = [];
     initialWord.toUpperCase().split("").forEach(w => {
         const idx = letterToIndex[w];
         alphabetCopy[idx][1]--;
+        itemsTotal--;
         initialWordFields.push({
             "symbol": w,
             "price": alphabetCopy[idx][2]
@@ -68,7 +70,8 @@ function createLettersData(
             }
             return a;
         }).flat(),
-        fields: initialWordFields
+        fields: initialWordFields,
+        itemsTotal: itemsTotal
     };
 }
 
@@ -109,6 +112,7 @@ function createServer(
 
     const queue = data.queue;
     const invokeOnChange = [];
+    let state = "";
 
     function pickLetter() {
         const idx = randomInRange(0, queue.length - 1);
@@ -165,6 +169,9 @@ function createServer(
         symbol,
         index
     ) {
+        if (state==="offered") {
+            return error("Cannot offer while active offer is pending")
+        }
         if (player !== getCurrentTurnPlayer()) {
             return error("Player " + player + " is not allowed to offer items, turn is for " + getCurrentTurnPlayer());
         }
@@ -188,6 +195,9 @@ function createServer(
     let acceptsRemaining = 0;
 
     function offerWord(player) {
+        if (state==="offered") {
+            return error("Cannot offer while active offer is pending")
+        }
         for (let i = 0; i < size * size; i++) {
             if (field[i]?.state === "placed") {
                 if (field[i].author !== player) {
@@ -198,6 +208,7 @@ function createServer(
         }
         accepts = {};
         acceptsRemaining = players.length - 1;
+        state = "offered";
         toggleChange();
     }
 
@@ -285,10 +296,11 @@ function createServer(
             }
         }
         turn++;
+        state = "";
         toggleChange();
     }
 
-    function refuseVoted() {
+    function returnBackPlacedItems() {
         for (let i = 0; i < size * size; i++) {
             const state = field[i]?.state;
             if (state === "offered" || state === "placed") {
@@ -297,6 +309,11 @@ function createServer(
                 inventories[refund.author].push(refund);
             }
         }
+        state = "";
+    }
+
+    function refuseVoted() {
+        returnBackPlacedItems();
         toggleChange();
     }
 
@@ -319,6 +336,7 @@ function createServer(
     }
 
     function skip(player) {
+        returnBackPlacedItems();
         const currentPlayer = getCurrentTurnPlayer();
         if (currentPlayer !== player) {
             return error("Player " + player + " is not allowed to skip, current player is " + currentPlayer);
@@ -328,6 +346,7 @@ function createServer(
     }
 
     function renew(player) {
+        returnBackPlacedItems();
         const currentPlayer = getCurrentTurnPlayer();
         if (currentPlayer !== player) {
             return error("Player " + player + " is not allowed to renew, current player is " + currentPlayer);
@@ -352,7 +371,8 @@ function createServer(
                 return {
                     "inventory": inventories[player],
                     "field": field,
-                    "poolRemaining": queue.length,
+                    "remainingItems": queue.length,
+                    "totalItems": data.itemsTotal,
                     "turn": {
                         "player": getCurrentTurnPlayer(),
                         "number": turn
