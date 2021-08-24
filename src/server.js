@@ -129,7 +129,7 @@ function createServer(
 
     const inventories = {};
     const rank = {};
-    const initialInventorySize = 7;
+    const initialInventorySize = 8;
     players.forEach(p => {
         rank[p] = 0;
         const v = [];

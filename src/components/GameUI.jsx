@@ -18,9 +18,29 @@ const useStyles = makeStyles({
     },
     remaining: {
         paddingTop: "20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px"
+        "&::before": {
+            display: "block",
+            content: '"Remaining items: " attr(data-remaining-items)',
+            paddingBottom: "8px"
+        }
+    },
+    title: {
+        fontWeight: 600,
+        fontSize: "20px",
+        paddingBottom: "10px"
+    },
+    inventory: {
+        paddingTop: "10px",
+        paddingBottom: "10px",
+        display: "grid",
+        gap: "5px",
+        gridTemplateColumns: "repeat(4, 1fr)",
+        "&::before": {
+            content: '"Inventory: "',
+            gridColumnStart: "1",
+            gridColumnEnd: "5",
+            paddingBottom: "3px"
+        }
     }
 })
 
@@ -32,19 +52,20 @@ const GameUI = (props) => {
 
     const InventoryItem = (item) => {
         const eq = props.placingItem?.symbol === item.symbol
-        return <ListItem button
-                         disabled={props.turn !== props.player}
-                         onClick={() => {
-                             if (eq) {
-                                 props.setPlacingItem(undefined);
-                             } else {
-                                 props.setPlacingItem(item);
-                             }
-                         }}
+        return <Button
+            variant="contained"
+            color={eq ? "secondary" : "primary"}
+            disabled={props.turn !== props.player}
+            onClick={() => {
+                if (eq) {
+                    props.setPlacingItem(undefined);
+                } else {
+                    props.setPlacingItem(item);
+                }
+            }}
         >
-            <ListItemText className={eq ? classes.activeCard : ""}
-                          primary={item.symbol + " (" + item.price + ")"}/>
-        </ListItem>
+            {item.symbol + " (" + item.price + ")"}
+        </Button>
     }
 
     const skipTurn = () => {
@@ -59,14 +80,18 @@ const GameUI = (props) => {
 
     return <Card>
         <CardContent>
-            <List>
+            <div className={classes.title}>
+                Turn: {props.turn}
+            </div>
+            <Divider/>
+            <div className={classes.inventory}>
                 {props.inventory
                     .sort((a, b) => a.symbol.localeCompare(b.symbol))
                     .map((item, idx) => <InventoryItem
                         key={"game-ui__inventory$" + idx + ":" + item.symbol}
                         {...item}
                     />)}
-            </List>
+            </div>
             <Divider/>
             <List>
                 <ListItem button
@@ -179,8 +204,7 @@ const GameUI = (props) => {
                         )}
                 </TableBody>
             </Table>
-            <div className={classes.remaining}>
-                Remaining letters: {props.remainingItems}
+            <div className={classes.remaining} data-remaining-items={props.remainingItems}>
                 <LinearProgress variant="determinate" value={props.remainingItems * 100 / props.totalItems}/>
             </div>
         </CardContent>

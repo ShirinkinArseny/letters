@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from "react";
 import GameUI from "./GameUI.jsx";
-import GameTitle from "./GameTitle.jsx";
 import GameField from "./GameField.jsx";
 import {makeStyles} from "@material-ui/core/styles";
 
@@ -11,24 +10,18 @@ const useStyles = makeStyles({
         borderRadius: "2px",
         width: "100%",
         height: "100%",
-        display: "grid",
-        gridTemplateAreas: '"title title ui" "field x ui"',
-        gridTemplateColumns: "auto 1fr auto",
-        gridTemplateRows: "auto 1fr",
+        display: "flex",
         padding: "20px",
-        boxSizing: "border-box"
-    },
-
-    title: {
-        gridArea: "title",
+        boxSizing: "border-box",
+        justifyContent: "space-between"
     },
 
     field: {
-        gridArea: "field",
+
     },
 
     ui: {
-        gridArea: "ui",
+
     }
 });
 
@@ -60,9 +53,6 @@ const Game = (props) => {
     const itemsArePlaced = playerState.field.find(i => i?.state === "placed")
 
     return <div className={classes.game}>
-        <div className={classes.title}>
-            <GameTitle title={props.player + " (turn: " + playerState.turn.player + ")"}/>
-        </div>
         <div className={classes.field}>
             <GameField
                 letters={playerState.field}
