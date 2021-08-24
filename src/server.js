@@ -3,31 +3,7 @@ function randomInRange(from, to) {
     const diff = to - from + 1;
     const v = from + diff * r;
     const vi = Math.floor(v);
-    if (vi < from || vi > to) {
-        throw new Error("Sadly, but randomInRange is broken")
-    }
     return vi;
-}
-
-function shuffle(array) {
-    const copy = [...array];
-
-    function swap(a, b) {
-        if (a === b) return;
-        const tmp = copy[a];
-        copy[a] = copy[b];
-        copy[b] = tmp;
-    }
-
-    const shuffleAgressiveness = 4;
-    for (let i = 0; i < copy.length; i++) {
-        for (let j = 0; j < shuffleAgressiveness; j++) {
-            const a = randomInRange(0, copy.length - 1);
-            const b = randomInRange(0, copy.length - 1);
-            swap(a, b);
-        }
-    }
-    return copy;
 }
 
 const alphabet = [
@@ -96,10 +72,6 @@ function createLettersData(
     };
 }
 
-function xyToIdx(x, y, size) {
-    return y * size + x;
-}
-
 function createGameField(size, initialItems) {
     const gamefield = [];
     for (let i = 0; i < size; i++) {
@@ -111,25 +83,44 @@ function createGameField(size, initialItems) {
     const y = Math.round(size / 2);
     initialItems.forEach((item, idx) => {
         const x = offset + idx;
-        const i = xyToIdx(x, y, size);
+        const i = y * size + x;
         item.state = "ok";
         gamefield[i] = item;
     });
     return gamefield;
 }
 
-function createServer(players, initialWord, size) {
+function createServer(
+    players,
+    initialWord,
+    size,
+    forgiveMistakes
+) {
 
     const data = createLettersData(initialWord);
 
+    let turn = 0;
+
+    function getCurrentTurnPlayer() {
+        return players[turn % players.length];
+    }
 
     const field = createGameField(size, data.fields);
 
-    const queue = shuffle(data.queue);
+    const queue = data.queue;
     const invokeOnChange = [];
 
-    function peekLetter() {
-        return queue.shift();
+    function pickLetter() {
+        const idx = randomInRange(0, queue.length - 1);
+        return queue.splice(idx, 1)[0];
+    }
+
+    function pickNewInventoryItems(player) {
+        for (let i = 0; i < initialInventorySize && queue.length > 0; i++) {
+            const item = pickLetter();
+            item.author = player;
+            inventories[player].push(item);
+        }
     }
 
     const inventories = {};
@@ -137,11 +128,7 @@ function createServer(players, initialWord, size) {
     players.forEach(p => {
         const v = [];
         inventories[p] = v;
-        for (let i = 0; i < initialInventorySize; i++) {
-            const item = peekLetter();
-            item.author = p;
-            v.push(item);
-        }
+        pickNewInventoryItems(p);
         return v;
     });
 
@@ -155,7 +142,7 @@ function createServer(players, initialWord, size) {
     function delayed(value) {
         return new Promise((resolve) => {
             delay(() => {
-                resolve(value);
+                resolve(value());
             });
         });
     }
@@ -164,21 +151,31 @@ function createServer(players, initialWord, size) {
         invokeOnChange.forEach(c => c());
     }
 
+    function error(text) {
+        if (forgiveMistakes) {
+            return true;
+        }
+        throw new Error(text);
+    }
+
     function offerItem(
         player,
         symbol,
         index
     ) {
+        if (player !== getCurrentTurnPlayer()) {
+            return error("Player " + player + " is not allowed to offer items, turn is for " + getCurrentTurnPlayer());
+        }
         if (index < 0 || index > size * size) {
-            throw new Error("Cell " + index + " is out of field");
+            return error("Cell " + index + " is out of field");
         }
         const playerInventoryIndex = inventories[player].findIndex(e => e.symbol === symbol);
         if (playerInventoryIndex === -1) {
-            throw new Error("Player " + player + " has no letter " + symbol + " in inventory")
+            return error("Player " + player + " has no letter " + symbol + " in inventory")
         }
         const item = inventories[player].splice(playerInventoryIndex, 1)[0];
         if (field[index]) {
-            throw new Error("Cell " + index + " is already taken")
+            return error("Cell " + index + " is already taken")
         }
         item.state = "placed";
         field[index] = item;
@@ -192,13 +189,13 @@ function createServer(players, initialWord, size) {
         for (let i = 0; i < size * size; i++) {
             if (field[i]?.state === "placed") {
                 if (field[i].author !== player) {
-                    throw new Error("Word is offered not by player " + player);
+                    return error("Word is offered not by player " + player);
                 }
                 field[i].state = "offered";
             }
         }
         accepts = {};
-        acceptsRemaining = players.length;
+        acceptsRemaining = players.length - 1;
         toggleChange();
     }
 
@@ -206,17 +203,19 @@ function createServer(players, initialWord, size) {
         for (let i = 0; i < size * size; i++) {
             if (field[i]?.state === "offered") {
                 field[i].state = "ok";
-                const newItem = peekLetter();
+                const newItem = pickLetter();
                 newItem.author = field[i].author;
                 inventories[field[i].author].push(newItem);
             }
         }
+        turn++;
         toggleChange();
     }
 
     function refuseVoted() {
         for (let i = 0; i < size * size; i++) {
-            if (field[i]?.state === "offered") {
+            const state = field[i]?.state;
+            if (state === "offered" || state === "placed") {
                 const refund = field[i];
                 field[i] = undefined;
                 inventories[refund.author].push(refund);
@@ -226,6 +225,9 @@ function createServer(players, initialWord, size) {
     }
 
     function accept(player) {
+        if (player === getCurrentTurnPlayer()) {
+            return error("Player " + player + " is not allowed to vote for own word")
+        }
         if (!accepts[player]) {
             acceptsRemaining--;
         }
@@ -239,14 +241,43 @@ function createServer(players, initialWord, size) {
         refuseVoted();
     }
 
+    function skip(player) {
+        const currentPlayer = getCurrentTurnPlayer();
+        if (currentPlayer !== player) {
+            return error("Player " + player + " is not allowed to skip, current player is " + currentPlayer);
+        }
+        turn++;
+        toggleChange();
+    }
+
+    function renew(player) {
+        const currentPlayer = getCurrentTurnPlayer();
+        if (currentPlayer !== player) {
+            return error("Player " + player + " is not allowed to renew, current player is " + currentPlayer);
+        }
+        for (let i = 0; i < inventories[player].length; i++) {
+            queue.push(inventories[player][i]);
+        }
+        inventories[player]=[];
+        pickNewInventoryItems(player);
+        turn++;
+        toggleChange();
+    }
+
     return {
         getQueue: () => {
-            return delayed(queue);
+            return delayed(() => { return queue; });
         },
         getPlayerState: (player) => {
-            return delayed({
-                "inventory": inventories[player],
-                "field": field
+            return delayed(() => {
+                return {
+                    "inventory": inventories[player],
+                    "field": field,
+                    "turn": {
+                        "player": getCurrentTurnPlayer(),
+                        "number": turn
+                    }
+                }
             });
         },
         offerItem: (player, symbol, index) => {
@@ -267,6 +298,12 @@ function createServer(players, initialWord, size) {
         },
         accept: (player) => {
             accept(player);
+        },
+        skip: (player) => {
+            skip(player);
+        },
+        renew: (player) => {
+            renew(player);
         }
     }
 

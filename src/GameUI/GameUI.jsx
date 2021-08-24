@@ -1,78 +1,82 @@
 import React from "react";
-import './GameUI.css';
-
-const GameUICard = (props) => {
-
-    const classname = props.placingItem?.symbol === props.symbol
-        ? "game-ui-card_selected"
-        : ""
-
-    return <button
-        className={classname + " game-ui-card"}
-        onClick={() => {
-            const eq = props.placingItem?.symbol === props.symbol
-            console.log(props.placingItem?.symbol + " $ " + props.symbol + " $ " + eq);
-            if (eq) {
-                props.setPlacingItem(undefined);
-            } else {
-                props.setPlacingItem(props);
-            }
-        }}
-    >
-        <div className="game-ui-card__symbol">
-            {props.symbol}
-        </div>
-        <div className="game-ui-card__price">
-            {props.price}
-        </div>
-    </button>
-}
-
-const GameUIButton = (
-    props
-) => {
-    const onclick = props.onClick || (() => {
-    });
-    return <button
-        className="game-ui-button"
-        onClick={onclick}
-    >
-        {props.children}
-    </button>
-}
+import {Button, ButtonGroup} from "@material-ui/core";
 
 const GameUI = (props) => {
 
-    const inventory = props.inventory.map((item, idx) => {
-        return <GameUICard
-            symbol={item.symbol}
-            price={item.price}
+    const inventory = props.inventory
+        .sort((a, b) => a.symbol.localeCompare(b.symbol))
+        .map((item, idx) => {
+        const eq = props.placingItem?.symbol === item.symbol
+        return <Button
+            disabled={props.turn !== props.player}
             key={"game-ui__inventory$" + idx + ":" + item.symbol}
-            placingItem={props.placingItem}
-            setPlacingItem={(item) => {
-                props.setPlacingItem(item)
+            color={eq ? "secondary" : "primary"}
+            onClick={() => {
+                console.log(props.placingItem?.symbol + " $ " + item.symbol + " $ " + eq);
+                if (eq) {
+                    props.setPlacingItem(undefined);
+                } else {
+                    props.setPlacingItem(item);
+                }
             }}
-        />
+        >
+            {item.symbol} ({item.price})
+        </Button>
     });
 
     return <div className="game-ui">
-        {inventory}
-        <GameUIButton onClick={() => {
-            props.setPlacingItem(undefined);
-            props.accept();
-        }
-        }>ACCEPT</GameUIButton>
-        <GameUIButton onClick={() => {
-            props.setPlacingItem(undefined);
-            props.refuse();
-        }
-        }>REFUSE</GameUIButton>
-        <GameUIButton onClick={() => {
-            props.setPlacingItem(undefined);
-            props.offerWord();
-        }}>OFFER</GameUIButton>
-        <GameUIButton>SKIP</GameUIButton>
-        <GameUIButton>RENEW</GameUIButton>
+        <ButtonGroup
+            variant="contained"
+            orientation="vertical"
+        >
+            {inventory}
+            <Button
+                disabled={!props.itemsAreOffered || props.turn === props.player}
+                onClick={() => {
+                    props.setPlacingItem(undefined);
+                    props.accept();
+                }}
+            >
+                ACCEPT
+            </Button>
+            <Button
+                disabled={!props.itemsAreOffered && props.turn !== props.player}
+                onClick={() => {
+                    props.setPlacingItem(undefined);
+                    props.refuse();
+                }
+                }
+            >
+                REFUSE
+            </Button>
+            <Button
+                disabled={!props.itemsArePlaced || props.turn !== props.player}
+                onClick={() => {
+                    props.setPlacingItem(undefined);
+                    props.offerWord();
+                }}
+            >
+                OFFER
+            </Button>
+            <Button
+                disabled={props.turn !== props.player}
+                onClick={() => {
+                    props.setPlacingItem(undefined);
+                    props.skip();
+                }}
+            >
+                SKIP
+            </Button>
+            <Button
+                disabled={props.turn !== props.player}
+                onClick={() => {
+                    props.setPlacingItem(undefined);
+                    props.renew();
+                }}
+            >
+                RENEW
+            </Button>
+        </ButtonGroup>
     </div>
 };
 

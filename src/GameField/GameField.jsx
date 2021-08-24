@@ -1,48 +1,47 @@
 import React from "react";
-import './GameField.css';
+import {makeStyles} from "@material-ui/core/styles";
+import {FilledCell, EmptyCell} from "../Cell/Cell";
 
-const GameFieldEmptyCell = (props) => {
-    return <button className="game-field-cell game-field-cell_empty" onClick={() => props.placeItem()}>
+const useStyles = makeStyles({
 
-    </button>
-};
+    field: {
+        display: "grid",
+        gap: "4px",
+        gridTemplateColumns: "repeat(var(--game-field-size), max-content)",
+        gridTemplateRows: "repeat(var(--game-field-size), max-content)",
+    },
 
-const GameFieldFilledCell = (props) => {
-    const classname =
-        props.state === "ok"
-            ? "game-field-cell_ok"
-            : props.state === "placed"
-                ? "game-field-cell_placed"
-                : "game-field-cell_offered";
-    return <div className={classname + " game-field-cell"}>
-        <div className="game-field-cell__author">
-            {props.author}
-        </div>
-        <div className="game-field-cell__symbol">
-            {props.symbol}
-        </div>
-        <div className="game-field-cell__price">
-            {props.price}
-        </div>
-    </div>
-};
+
+});
 
 const GameField = (props) => {
 
+    const classes = useStyles();
+
     const size = Math.round(Math.sqrt(props.letters.length));
+
+    const itemPlacer = (index) => {
+        return () => {
+            if (props.placeItem) {
+                props.placeItem(index);
+            }
+        };
+    }
 
     const lettersComponents = props.letters.map((letter, index) => {
         return letter
-            ? <GameFieldFilledCell key={index} {...letter}/>
-            : <GameFieldEmptyCell key={index} placeItem={() => {
-                if (props.placeItem) {
-                    props.placeItem(index);
-                }
-            }
-            }/>;
+            ? <FilledCell
+                key={letter?.symbol + "__" + index}
+                {...letter}
+            />
+            : <EmptyCell
+                key={index}
+                onClick={itemPlacer(index)}
+            />
+            ;
     });
 
-    return <div className="game-field"
+    return <div className={classes.field}
                 style={{"--game-field-size": size}}
     >
         {lettersComponents}

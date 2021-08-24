@@ -1,8 +1,16 @@
 import React from "react";
-import './GameTitle.css';
+import {makeStyles} from "@material-ui/core/styles";
+
+const useStyles = makeStyles({
+    title: {
+        fontWeight: "600",
+        color: "#222",
+    }
+})
 
 const GameTitle = (props) => {
-    return <div className="game-title">
+    const classes = useStyles();
+    return <div className={classes.title}>
         {props.title}
     </div>
 };
