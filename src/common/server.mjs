@@ -56,7 +56,8 @@ function createLettersData(
             "price": alphabetCopy[idx][2]
         })
         if (alphabetCopy[idx][1] < 0) {
-            throw new Error("This word contains more letters " + w + " that allowed in alphabet")
+            //throw new Error("This word contains more letters " + w + " that allowed in alphabet")
+            itemsTotal++;
         }
     });
     return {
@@ -94,13 +95,13 @@ function createGameField(size, initialItems) {
 }
 
 function createServer(
-    players,
-    initialWord,
-    size,
     forgiveMistakes
 ) {
+    const players = [];
 
-    const data = createLettersData(initialWord);
+    let size = 14;
+
+    let data;
 
     let turn = 0;
 
@@ -108,11 +109,16 @@ function createServer(
         return players[turn % players.length];
     }
 
-    const field = createGameField(size, data.fields);
-
-    const queue = data.queue;
-    const invokeOnChange = [];
+    let field = [];
     let state = "";
+
+    let queue;
+
+    const inventories = {};
+    const rank = {};
+
+
+    const invokeOnChange = [];
 
     function pickLetter() {
         const idx = randomInRange(0, queue.length - 1);
@@ -127,22 +133,46 @@ function createServer(
         }
     }
 
-    const inventories = {};
-    const rank = {};
     const initialInventorySize = 8;
-    players.forEach(p => {
-        rank[p] = 0;
+
+    function initPlayer(player) {
+        rank[player] = 0;
         const v = [];
-        inventories[p] = v;
-        pickNewInventoryItems(p);
-        return v;
-    });
+        inventories[player] = v;
+        pickNewInventoryItems(player);
+    }
+
+    let accepts = {};
+    let acceptsRemaining = 0;
+
+    function toggleChange() {
+        invokeOnChange.forEach(c => c());
+    }
+
+    function restart(word, sizeRaw) {
+        size = Math.max(word.length, sizeRaw);
+        data = createLettersData(word);
+        queue = data.queue
+        field = createGameField(size, data.fields);
+        state = "";
+        turn = 0;
+        players.forEach(p => {
+            inventories[p] = [];
+            rank[p] = 0;
+            initPlayer(p);
+        });
+        accepts = {};
+        acceptsRemaining = 0;
+        toggleChange();
+    }
+
+    restart("", 14);
 
 
     function delay(action) {
         setTimeout(() => {
             action();
-        }, randomInRange(50, 500));
+        }, 0);
     }
 
     function delayed(value) {
@@ -151,10 +181,6 @@ function createServer(
                 resolve(value());
             });
         });
-    }
-
-    function toggleChange() {
-        invokeOnChange.forEach(c => c());
     }
 
     function error(text) {
@@ -169,7 +195,7 @@ function createServer(
         symbol,
         index
     ) {
-        if (state==="offered") {
+        if (state === "offered") {
             return error("Cannot offer while active offer is pending")
         }
         if (player !== getCurrentTurnPlayer()) {
@@ -191,11 +217,8 @@ function createServer(
         toggleChange();
     }
 
-    let accepts = {};
-    let acceptsRemaining = 0;
-
     function offerWord(player) {
-        if (state==="offered") {
+        if (state === "offered") {
             return error("Cannot offer while active offer is pending")
         }
         for (let i = 0; i < size * size; i++) {
@@ -360,12 +383,14 @@ function createServer(
         toggleChange();
     }
 
+    function join(username) {
+        if (!players.includes(username)) {
+            players.push(username);
+            initPlayer(username);
+        }
+    }
+
     return {
-        getQueue: () => {
-            return delayed(() => {
-                return queue;
-            });
-        },
         getPlayerState: (player) => {
             return delayed(() => {
                 return {
@@ -381,6 +406,15 @@ function createServer(
                 }
             });
         },
+        subscribe: (callback) => {
+            invokeOnChange.push(callback);
+            return new Promise((ok) => {
+                ok(1)
+            });
+        },
+        join: (player) => {
+            join(player);
+        },
         offerItem: (player, symbol, index) => {
             delay(() => {
                 offerItem(player, symbol, index);
@@ -390,9 +424,6 @@ function createServer(
             delay(() => {
                 offerWord(player);
             });
-        },
-        subscribe: (callback) => {
-            invokeOnChange.push(callback);
         },
         refuse: (player) => {
             refuse(player);
@@ -405,6 +436,9 @@ function createServer(
         },
         renew: (player) => {
             renew(player);
+        },
+        restart: (word, size) => {
+            restart(word, size);
         }
     }
 

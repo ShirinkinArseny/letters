@@ -9,7 +9,7 @@ const useStyles = makeStyles({
         width: "100%",
         display: "grid",
         gap: "4px",
-        gridTemplateColumns: "repeat(var(--game-field-size), 1fr)",
+        gridTemplateColumns: "repeat(var(--game-field-size), max-content)",
         gridTemplateRows: "repeat(var(--game-field-size), max-content)",
     },
 

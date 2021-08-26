@@ -1,10 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import SpitScreen from './components/SpitScreen';
+import Menu from './client/components/Menu';
 
 ReactDOM.render(
   <React.StrictMode>
-              <SpitScreen/>
+              <Menu/>
   </React.StrictMode>,
   document.getElementById('root')
 );

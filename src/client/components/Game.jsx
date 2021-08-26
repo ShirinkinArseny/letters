@@ -11,18 +11,15 @@ const useStyles = makeStyles({
         width: "100%",
         height: "100%",
         display: "flex",
+        justifyContent: "space-between",
         padding: "20px",
         boxSizing: "border-box",
         gap: "20px"
     },
 
-    field: {
-        flex: "1"
-    },
+    field: {},
 
-    ui: {
-
-    }
+    ui: {}
 });
 
 const Game = (props) => {
@@ -82,6 +79,7 @@ const Game = (props) => {
                 }}
                 skip={() => props.server.skip(props.player)}
                 renew={() => props.server.renew(props.player)}
+                restart={(word, size) => props.server.restart(word, size)}
                 rank={playerState.rank}
             />
         </div>

@@ -3,12 +3,10 @@ import {makeStyles} from "@material-ui/core/styles";
 
 const useStyles = makeStyles({
     cell: {
-        width: "100%",
-        "&::after": {
-            content: '" "',
-            display: "block",
-            paddingBottom: "100%"
-        },
+        width: "calc( var(--coef) * (100vh - 160px) / var(--game-field-size) )",
+        maxWidth: "calc( var(--coef) * (100vw - 340px) / var(--game-field-size) )",
+        height: "calc( var(--coef) * (100vh - 160px) / var(--game-field-size) )",
+        maxHeight: "calc( var(--coef) * (100vw - 340px) / var(--game-field-size) )",
         overflow: "hidden",
         boxSizing: "border-box",
         color: "#FFF",
@@ -64,14 +62,16 @@ const useStyles = makeStyles({
 
 const FilledCell = (props) => {
     const classes = useStyles();
-    const classname =
-        props.state === "ok"
-            ? classes.cellOk
-            : props.state === "placed"
-                ? classes.cellPlaced
-                : classes.cellOffered;
+
+    function cellStateToClass(state) {
+        if (state === "ok") return classes.cellOk;
+        if (state === "placed") return classes.cellPlaced;
+        if (state === "offered") return classes.cellOffered;
+        throw new Error("Unknown cell state: " + state);
+    }
+
     return <div
-        className={classname + " " + classes.cell}
+        className={cellStateToClass(props.state) + " " + classes.cell}
     >
         <span className={classes.symbol}>{props.symbol}</span>
         <span className={classes.price}>{props.price}</span>
